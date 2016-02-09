@@ -18,6 +18,12 @@
 	/* background: #f5f5f5; */
 	border: 1px solid #e3e3e3;
 }
+.codemirror-movie--positive {
+	background-color: #efe;
+}
+.codemirror-movie--negative {
+	background-color: #fee;
+}
 </style>
 </head>
 <body>
@@ -59,7 +65,10 @@ type: {
     Example Title
   delay: 20
 } ::: Add a Title
-wait: 100
+wait: 1000
+highlight: { from: '3:8', to: '3:21', style: 'codemirror-movie--positive' } ::: I love this title!
+wait: 1000
+highlight: { from: '7:3', to: '7:14', style: 'codemirror-movie--negative' } ::: Why always hello world?
 </textarea>
 	<button style="font-size: 2em;margin: 10px auto;display: block;">Play</button>
 	<script>
