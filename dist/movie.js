@@ -521,7 +521,7 @@ function movie(target) {
 
 /**
  * Prettyfies key bindings references in given string: formats it according
- * to current user’s platform. The key binding should be defined inside 
+ * to current user’s platform. The key binding should be defined inside
  * parentheses, e.g. <code>(ctrl-alt-up)</code>
  * @param {String} str
  * @param {Object} options Transform options
@@ -553,7 +553,78 @@ function readLines(text) {
 	var nl = "\n";
 	var lines = (text || "").replace(/\r\n/g, nl).replace(/\n\r/g, nl).replace(/\r/g, nl).split(nl);
 
+	// If this line starts with spaces or is just a }, combine it with the last line
+	for (var i = lines.length - 1; i >= 0; i--) {
+		if (lines[i].match(/^[\s\s]|^[}$]/)) {
+			lines[i - 1] = lines[i - 1] + "\n" + lines[i];
+			lines.splice(i, 1);
+		}
+	}
+
+	// Combine multiline statements into a single line
+	for (var i = 0, len = lines.length; i < lines.length; i++) {
+		if (lines[i].match("\n") && lines[i].match()) {
+			lines[i] = parseMultlineScenerio(lines[i]);
+		}
+	}
+
 	return lines.filter(Boolean);
+}
+
+// Allow commands to be spread over multiple lines, using indentation to determine
+function parseMultlineScenerio(line) {
+	var reg = /^(\w+?)\s*:\s*({[\s|\S]+})\s*(?::::\s*([\s\S]+))?/m,
+	    res = line.match(reg),
+	    ob = {};
+
+	var parsedRes = res[2].split("\n"),
+	    key,
+	    t,
+	    tabLength = false,
+	    firstLevelIndentRegex = "(w+?)s*:s*(.+)",
+	    lastLevelIndentRegex;
+	for (var i = 0, len = parsedRes.length; i < len; i++) {
+		var tabs = parsedRes[i].match(/^(\s)+/);
+		if (tabs) {
+			// 2 tabs means this must be a key
+			if (tabs[0].length == tabLength || !tabLength) {
+				if (!tabLength) {
+					tabLength = tabs[0].length;
+					firstLevelIndentRegex = new RegExp("^\\s{" + tabLength + "}(\\w+?)\\s*:\\s*(.+)");
+					lastLevelIndentRegex = new RegExp("^\\s{" + tabLength * 2 + "}");
+				}
+				// If this is a {key: value}, save both
+				if (parsedRes[i].match(firstLevelIndentRegex)) {
+					t = parseJSON("{" + parsedRes[i] + "}");
+					key = Object.keys(t)[0];
+					ob[key] = t[key];
+				} else {
+					// Otherwise, just a key, add that in
+					key = parsedRes[i].match(/\w+/)[0];
+					ob[key] = "";
+				}
+			} else {
+				// This is a multiline string we need to combine
+				ob[key] = ob[key] + parsedRes[i].replace(lastLevelIndentRegex, "") + "\n";
+			}
+		} else if (parsedRes[i].match(/^\s*$/) && key) {
+			ob[key] = ob[key] + "\n";
+		}
+	}
+
+	Object.keys(ob).forEach(function (key) {
+		if (ob[key].trim) {
+			ob[key] = ob[key].trim();
+		}
+	});
+
+	// Add Outline
+	var outline = "";
+	if (res[3]) {
+		outline = " ::: " + res[3];
+	}
+
+	return res[1] + ":" + JSON.stringify(ob) + outline;
 }
 
 function unescape(text) {
@@ -580,7 +651,7 @@ function parseMovieDefinition(text) {
 	var parts = text.split(options.sectionSeparator);
 
 	// parse scenario
-	var reDef = /^(\w+)\s*:\s*(.+)$/;
+	var reDef = /^(\w+?)\s*:\s*({[\s|\S]+})\s*(?::::\s*(.+))?/m;
 	var scenario = [];
 	var outline = {};
 	var editorOptions = {};
