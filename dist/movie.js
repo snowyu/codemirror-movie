@@ -197,6 +197,32 @@ var actions = {
 		var to = makePos(options.to, editor);
 		editor.markText(from, to, { className: options.style });
 		next();
+	},
+
+	/**
+  * Removes a highlight from text
+  * @param {Object} options
+  * @param {CodeMirror} editor
+  * @param {Function} next
+  * @param {Function} timer
+  */
+	unhighlight: function unhighlight(options, editor, next, timer) {
+		options = extend({
+			from: "caret",
+			style: "highlighted"
+		}, wrap("to", options));
+
+		var from = makePos(options.from, editor);
+		var to = makePos(options.to, editor);
+		var marks = editor.findMarksAt(from, to);
+		marks.forEach(function (mark) {
+			if (mark.className === options.style) {
+				mark.clear();
+			}
+		});
+
+		editor.markClean(from, to, { className: options.style });
+		next();
 	}
 };
 
