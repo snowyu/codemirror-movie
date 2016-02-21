@@ -235,7 +235,7 @@ var actions = {
 	highlightline: function highlightline(options, editor, next, timer) {
 		options = extend({
 			style: "highlighted",
-			where: "wrap"
+			where: "text"
 		}, wrap("to", options));
 
 		var from = +options.from;
@@ -258,7 +258,7 @@ var actions = {
 	unhighlightline: function unhighlightline(options, editor, next, timer) {
 		options = extend({
 			style: "highlighted",
-			where: "wrap"
+			where: "text"
 		}, wrap("to", options));
 
 		var from = +options.from;
