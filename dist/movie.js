@@ -223,6 +223,52 @@ var actions = {
 
 		editor.markClean(from, to, { className: options.style });
 		next();
+	},
+
+	/**
+  * Highlights an entire line
+  * @param {Object} options
+  * @param {CodeMirror} editor
+  * @param {Function} next
+  * @param {Function} timer
+  */
+	highlightline: function highlightline(options, editor, next, timer) {
+		options = extend({
+			style: "highlighted",
+			where: "wrap"
+		}, wrap("to", options));
+
+		var from = options.from;
+		var to = options.to;
+
+		// Add this lineclass to all lines
+		for (var i = from; i <= to; i++) {
+			editor.addLineClass(i, options.where, options.style);
+		}
+		next();
+	},
+
+	/**
+  * Highlights an entire line
+  * @param {Object} options
+  * @param {CodeMirror} editor
+  * @param {Function} next
+  * @param {Function} timer
+  */
+	removehighlightline: function removehighlightline(options, editor, next, timer) {
+		options = extend({
+			style: "highlighted",
+			where: "wrap"
+		}, wrap("to", options));
+
+		var from = options.from;
+		var to = options.to;
+
+		// Remove this lineclass to all lines
+		for (var i = from; i <= to; i++) {
+			editor.removeLineClass(i, options.where, options.style);
+		}
+		next();
 	}
 };
 
