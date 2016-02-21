@@ -255,7 +255,7 @@ var actions = {
   * @param {Function} next
   * @param {Function} timer
   */
-	removehighlightline: function removehighlightline(options, editor, next, timer) {
+	unhighlightline: function unhighlightline(options, editor, next, timer) {
 		options = extend({
 			style: "highlighted",
 			where: "wrap"
