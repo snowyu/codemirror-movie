@@ -859,6 +859,7 @@ var Scenario = (function () {
 
 		this._actions = actions;
 		this._actionIx = 0;
+		this._pauseAfter = 0;
 		this._editor = null;
 		this._state = STATE_IDLE;
 		this._timerQueue = [];
@@ -891,7 +892,7 @@ var Scenario = (function () {
 
 			/**
     * Play current scenario
-    * @param {CodeMirror} editor Editor instance where on which scenario 
+    * @param {CodeMirror} editor Editor instance where on which scenario
     * should be played
     * @memberOf Scenario
     */
@@ -939,6 +940,17 @@ var Scenario = (function () {
 						}, defaultOptions.afterDelay);
 					}
 
+					var shouldPauseBeforeRunning = that._pauseAfter > 0 ? that._actionIx >= that._pauseAfter : false;
+					if (shouldPauseBeforeRunning) {
+						that._timerQueue.push({
+							fn: next,
+							delay: 0
+						});
+
+						that.pause();
+						return;
+					}
+
 					that.trigger("action", that._actionIx);
 					var action = parseActionCall(that._actions[that._actionIx++]);
 
@@ -958,13 +970,24 @@ var Scenario = (function () {
 		pause: {
 
 			/**
-    * Pause current scenario playback. It can be restored with 
-    * <code>play()</code> method call 
+    * Pause current scenario playback. It can be restored with
+    * <code>play()</code> method call
     */
 
 			value: function pause() {
 				this._state = STATE_PAUSE;
 				this.trigger("pause");
+			}
+		},
+		pauseAfter: {
+
+			/**
+    * Returns current playback state
+    * @return {String}
+    */
+
+			set: function (index) {
+				return this._pauseAfter = index;
 			}
 		},
 		stop: {
@@ -1007,6 +1030,26 @@ var Scenario = (function () {
 				}
 			}
 		},
+		wrapAction: {
+			value: function wrapAction(fn) {
+				// First time calling wrapped action will pause if needed
+				// After this
+				return (function wrap() {
+					var shouldPauseBeforeRunning = this._pauseAfter > 0 ? this._actionIx > this._pauseAfter : false;
+					if (shouldPauseBeforeRunning) {
+						this._timerQueue.push({
+							fn: fn,
+							delay: 0
+						});
+
+						this.pause();
+						this._actionIx = this._pauseAfter;
+					} else {
+						fn.apply(this, arguments);
+					}
+				}).bind(this);
+			}
+		},
 		requestTimer: {
 			value: (function (_requestTimer) {
 				var _requestTimerWrapper = function requestTimer(_x, _x2) {
@@ -1022,11 +1065,11 @@ var Scenario = (function () {
 				if (this._state !== STATE_PLAY) {
 					// save function call into a queue till next 'play()' call
 					this._timerQueue.push({
-						fn: fn,
+						fn: this.wrapAction(fn),
 						delay: delay
 					});
 				} else {
-					return requestTimer(fn, delay);
+					return requestTimer(this.wrapAction(fn), delay);
 				}
 			})
 		},
@@ -1908,7 +1951,7 @@ function hide(callback) {
 /**
  * @param {Element} dialog
  * @param {Element} bg
- * @param {Object} options 
+ * @param {Object} options
  */
 function animateShow(dialog, bg) {
 	var options = arguments[2] === undefined ? {} : arguments[2];
