@@ -238,8 +238,8 @@ var actions = {
 			where: "wrap"
 		}, wrap("to", options));
 
-		var from = options.from;
-		var to = options.to;
+		var from = +options.from;
+		var to = +(options.to || from);
 
 		// Add this lineclass to all lines
 		for (var i = from; i <= to; i++) {
@@ -261,8 +261,8 @@ var actions = {
 			where: "wrap"
 		}, wrap("to", options));
 
-		var from = options.from;
-		var to = options.to;
+		var from = +options.from;
+		var to = +(options.to || from);
 
 		// Remove this lineclass to all lines
 		for (var i = from; i <= to; i++) {
