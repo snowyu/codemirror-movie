@@ -942,13 +942,14 @@ var Scenario = (function () {
 
 					var shouldPauseBeforeRunning = that._pauseAfter > 0 ? that._actionIx >= that._pauseAfter : false;
 					if (shouldPauseBeforeRunning) {
-						that._timerQueue.push({
-							fn: next,
-							delay: 0
-						});
+						return timer(function () {
+							that._timerQueue.push({
+								fn: next,
+								delay: 0
+							});
 
-						that.pause();
-						return;
+							that.pause();
+						}, 1);
 					}
 
 					that.trigger("action", that._actionIx);
