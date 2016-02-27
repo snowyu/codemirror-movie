@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>CodeMirror Movie Player</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/codemirror.css">
+<link rel="stylesheet" href="./lib/movie.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/codemirror.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/mode/css/css.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/mode/xml/xml.js"></script>
+
+<script src="./dist/movie.js"></script>
+
+<style type="text/css">
+#input {
+  border: 1px solid #e3e3e3;
+}
+.CodeMirror {
+	font-size: 12px;
+	/* background: #f5f5f5; */
+	border: 1px solid #e3e3e3;
+}
+.CodeMirror pre.code-highlight-pos {
+	background-color: #efe;
+}
+.CodeMirror pre.code-highlight-neg {
+	background-color: #fee;
+}
+
+.editor {
+  width: 75%;
+  float: left;
+}
+
+#code { display: none; }
+#next, #play { display: none; }
+.has-movie #next, .has-movie #play { display: inline-block; }
+.playing-all #play, .playing-all #next { display: none; }
+
+</style>
+</head>
+<body>
+
+<div class='container'>
+  <h1>CodeMirror Movie Player</h1>
+  <p>Want to build a movie? Try the <a href='builder.html'>builder</a>.</p>
+  <div class='col-md-10'>
+    <textarea id="code" name="code"></textarea>
+    <h2>Input</h2>
+    <textarea id="input" class='col-md-12' rows='20'></textarea>
+  </div>
+
+  <div class='col-md-2'>
+    <div class="btn-group-vertical" id='buttons'>
+      <a class="btn btn-default" href="#" role="button" id='loadmovie'>Load Movie</a>
+      <a class="btn btn-default" href="#" role="button" id='play'>Play</a>
+      <a class="btn btn-default" href="#" role="button" id='next'>Next</a>
+    </div>
+
+    <ul class='list-unstyled' id='history'></ul>
+  </div>
+</div>
+
+  <script src='https://code.jquery.com/jquery-2.2.1.min.js'></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  <script>
+    var movie;
+
+    $(function() {
+      $('#loadmovie').on('click', function() {
+        $('.CodeMirror').remove();
+        $('#code').val($('#input').val());
+        movie = CodeMirror.movie('code');
+        $('#buttons').addClass('has-movie')
+                     .removeClass('playing-all');
+      });
+
+      $('#next').on('click', function() {
+        movie.pauseAfter = movie._actionIx + 1;
+  			movie.play();
+      });
+
+      $('#play').on('click', function() {
+        $('#buttons').addClass('playing-all');
+        movie.pauseAfter = null;
+        movie.play();
+      });
+    });
+  </script>
+</body>
+</html>
