@@ -1,0 +1,337 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>CodeMirror Movie Builder</title>
+<link rel="stylesheet" href="./node_modules/codemirror/lib/codemirror.css">
+<link rel="stylesheet" href="./lib/movie.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+<script src="./node_modules/codemirror/lib/codemirror.js"></script>
+<script src="./node_modules/codemirror/mode/css/css.js"></script>
+<script src="./node_modules/codemirror/mode/xml/xml.js"></script>
+
+<script src="./dist/movie.js"></script>
+
+<style type="text/css">
+#output {
+  border: 1px solid #e3e3e3;
+  background-color: #f6f6f6;
+}
+.CodeMirror {
+	font-size: 12px;
+	/* background: #f5f5f5; */
+	border: 1px solid #e3e3e3;
+}
+.codemirror-movie--positive {
+	background-color: #efe;
+}
+.codemirror-movie--negative {
+	background-color: #fee;
+}
+
+.editor {
+  width: 75%;
+  float: left;
+}
+.commands {
+  width: 23%;
+  float: right;
+}
+.commands ul, .commands ul li {
+  list-style: none;
+}
+.commands ul li {
+  padding-bottom: 10px;
+}
+#history {
+  margin-top: 30px;
+  border-top: 1px solid #e3e3e3;
+  padding-top: 10px;
+}
+.finish { display: none; }
+.btn-group-vertical .btn { display: none; }
+.action-started .start { display: none; }
+.action-started .finish { display: inline-block; }
+[data-lastaction='nothing'] .nothing { display: inline-block; }
+[data-lastaction='record'] .record { display: inline-block; }
+[data-lastaction='jumpTo'] .jumpTo { display: inline-block; }
+[data-lastaction='reset'] .reset { display: inline-block; }
+[data-lastaction='type'] .type { display: inline-block; }
+[data-lastaction='highlightline'] .highlightline { display: inline-block; }
+[data-lastaction='killLine'] .killLine { display: inline-block; }
+[data-lastaction='delCharBefore'] .delCharBefore { display: inline-block; }
+[data-lastaction='highlight'] .highlight { display: inline-block; }
+[data-lastaction='unhighlightline'] .unhighlightline { display: inline-block; }
+
+
+.CodeMirror-highlights { width: 10px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class='container'>
+  <h1>CodeMirror Movie Builder</h1>
+  <div class='col-md-10'>
+    <textarea id="code" name="code"></textarea>
+
+    <h2>Output</h2>
+    <textarea id="output" class='col-md-12' rows='20' readonly></textarea>
+  </div>
+
+  <div class='col-md-2'>
+    <div>
+      <div class="input-group">
+        <span class="input-group-addon" id="basic-addon3">Order</span>
+        <input type="text" class="form-control" id="starting-order" value="1">
+      </div>
+    </div>
+
+    <br />
+
+    <div class="btn-group-vertical" id='buttons' data-lastaction='nothing'>
+      <a class="btn btn-default nothing" href="#" role="button" data-action='record'>Set Initial Code</a>
+      <a class="btn btn-default record" href="#" role="button" data-action='reset'>Reset</a>
+      <a class="btn btn-default record jumpTo" href="#" role="button" data-action='jumpTo'>
+        <span class='start'>Set new Cursor Position</span>
+        <span class='finish'>Finalize Cursor Position</span>
+      </a>
+      <a class="btn btn-default record type" href="#" role="button" data-action='type'>
+        <span class='start'>Type</span>
+        <span class='finish'>Finish Typing</span>
+      </a>
+      <a class="btn btn-default record highlightline" href="#" role="button" data-action='highlightline'>
+        <span class='start'>Highlight Lines</span>
+        <span class='finish'>Finish Highlighting Lines</span>
+      </a>
+      <a class="btn btn-default record unhighlightline" href="#" role="button" data-action='unhighlightline'>
+        <span class='start'>Unhighlight Lines</span>
+        <span class='finish'>Finish Unhighlighting Lines</span>
+      </a>
+      <a class="btn btn-default record highlight" href="#" role="button" data-action='highlight'>
+        <span class='start'>Highlight Text</span>
+        <span class='finish'>Finish Highlighting Text</span>
+      </a>
+      <a class="btn btn-default record killLine" href="#" role="button" data-action='killLine'>
+        <span class='start'>Remove Lines</span>
+        <span class='finish'>Finish Removing Lines</span>
+      </a>
+      <a class="btn btn-default record delCharBefore" href="#" role="button" data-action='delCharBefore'>
+        <span class='start'>Delete Characters</span>
+        <span class='finish'>Finish Deleting Characters</span>
+      </a>
+    </div>
+
+    <ul class='list-unstyled' id='history'></ul>
+  </div>
+</div>
+
+  <script src='https://code.jquery.com/jquery-2.2.1.min.js'></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  <script>
+    var editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+          lineNumbers: true,
+          gutters: ["CodeMirror-linenumbers", "CodeMirror-highlights"]
+        }),
+        lastAction,
+        $buttons,
+        $output,
+        $history,
+        order = 1,
+        state = {};
+
+    function handleAction(e) {
+      var finish = $(e.toElement).hasClass('finish') ? true : false;
+      var started = $(e.toElement).hasClass('start') ? true : false;
+      e.preventDefault();
+      lastAction = $(this).attr('data-action');
+
+
+      if(finish) {
+        $buttons.attr('data-lastaction', 'record')
+                .removeClass('action-started');
+        $history.append('<li>'+lastAction+' completed</li>');
+      } else if(started) {
+        $buttons.attr('data-lastaction', lastAction)
+                .addClass('action-started');
+        $history.append('<li>'+lastAction+' started</li>');
+      } else if(lastAction === 'reset'){
+        $buttons.attr('data-lastaction', 'nothing');
+      } else {
+        $buttons.attr('data-lastaction', 'record')
+                .removeClass('action-started');
+        $history.append('<li>'+lastAction+'</li>');
+      }
+      commands[lastAction](started);
+
+      if(finish) { state = {}; }
+    }
+
+    function appendCommand(text) {
+      console.log(text);
+      var current = $output.val();
+      $output.val(current + "\n" + text);
+    }
+
+    var commands = {
+      reset: function() {
+        $output.val('');
+        $history.empty();
+        editor.setOption("readOnly", false);
+      },
+      record: function() {
+        var cursorPosition = editor.getCursor(),
+            lines = editor.getValue().split('\n');
+
+        order = +$('#starting-order').val();
+
+        // Add in the initial cursor position
+        var line = lines[cursorPosition.line].split('');
+        line.splice(cursorPosition.ch, 0, '|');
+        lines[cursorPosition.line] = line.join('');
+
+        $output.val(lines.join('\n') + "\n" + "@@@");
+        editor.setOption("readOnly", true);
+      },
+      jumpTo: function(started) {
+        if(started) {
+          // Let them find a spot for the cursor
+          editor.setOption("readOnly", false);
+        } else {
+          var cursorPosition = editor.getCursor();
+          appendCommand('jumpTo: { order: '+ (order++) +', pos: "'+cursorPosition.line+':'+cursorPosition.ch+'" }');
+          editor.setOption("readOnly", true);
+        }
+      },
+      type: function(started) {
+        if(started) {
+          editor.setOption("readOnly", false);
+          editor.focus();
+          state.cursorPosition = editor.getCursor();
+        } else {
+          var newPosition = editor.getCursor(),
+              enteredText = editor.getRange(state.cursorPosition, newPosition);
+          enteredText = enteredText.replace(/\n/g, '\\n');
+          appendCommand('type: { order: '+ (order++) +', text: "'+enteredText+'" }');
+          editor.setOption("readOnly", true);
+        }
+      },
+      highlightline: function(start) {
+        if(start) {
+          // nothing
+          editor.on("gutterClick", createMarker);
+        } else {
+          var min = Math.min.apply(this, state.lines),
+              max = Math.max.apply(this, state.lines);
+              pos = "from: '"+min+"'";
+          if(min !== max) {
+            pos = pos + ", to: '"+max+"'";
+          }
+          editor.off("gutterClick", createMarker);
+          appendCommand("highlightline: { order: "+ (order++) +", "+pos+", style: 'code-highlight-pos' }")
+          editor.clearGutter('CodeMirror-highlights');
+        }
+      },
+      unhighlightline: function(start) {
+        if(start) {
+          // nothing
+          editor.on("gutterClick", createMarker);
+        } else {
+          var min = Math.min.apply(this, state.lines),
+              max = Math.max.apply(this, state.lines);
+              pos = "from: '"+min+"'";
+          if(min !== max) {
+            pos = pos + ", to: '"+max+"'";
+          }
+          editor.off("gutterClick", createMarker);
+          appendCommand("unhighlightline: { order: "+ (order++) +", "+pos+", style: 'code-highlight-pos' }")
+          editor.clearGutter('CodeMirror-highlights');
+        }
+      },
+      killLine: function(start) {
+        if(start) {
+          // nothing
+          editor.on("gutterClick", createMarker);
+        } else {
+          var min = Math.min.apply(this, state.lines),
+              max = Math.max.apply(this, state.lines);
+              times = "";
+          if(min !== max) {
+            times = ", times: " + (max-min+1);
+          }
+          editor.off("gutterClick", createMarker);
+          appendCommand("jumpTo: { order: "+ (order++) +", pos: '"+min+":0'}");
+          appendCommand("run: { order: "+ (order++) +", command: 'killLine'"+times+" }");
+          editor.clearGutter('CodeMirror-highlights');
+
+          var val = editor.getValue().split('\n');
+          val.splice(min, (max-min)+1);
+          editor.setValue(val.join('\n'));
+        }
+      },
+      delCharBefore: function(start) {
+        if(start) {
+          // nothing
+          editor.setOption("readOnly", false);
+          editor.on("keyup", trackCharacterCount);
+          editor.focus();
+          state.times = 0;
+        } else {
+          editor.setOption("readOnly", true);
+          editor.off("keyup", trackCharacterCount);
+          if(state.times && state.times >= 1) {
+            var times = '';
+            if(state.times >= 1) {
+              times = ", times: " + state.times
+            }
+            appendCommand("run: { order: "+ (order++) +", command: 'delCharBefore'"+times+" }");
+          }
+        }
+      }
+      ,
+      highlight: function(start) {
+        if(start) {
+          editor.focus();
+        } else {
+          var start = editor.getCursor(true),
+              end = editor.getCursor(false),
+              fromPos = start.line + ":" + start.ch,
+              toPos = end.line + ":" + end.ch;
+          appendCommand("highlight: { order: "+ (order++) +", from: '"+fromPos+"', to: '"+toPos+"', style: 'code-highlight-neg' }")
+        }
+      }
+    }
+
+    function trackCharacterCount(cm, change) {
+      state.times++;
+    }
+
+    function createMarker(cm, n) {
+      var info = cm.lineInfo(n);
+      state.lines = state.lines || [];
+      state.lines.push(n);
+      if(info.gutterMarkers) {
+        var index = state.lines.indexOf(n);
+        state.lines.splice(index, 1);
+      }
+      cm.setGutterMarker(n, "CodeMirror-highlights", info.gutterMarkers ? null : makeMarker());
+    }
+
+    function makeMarker() {
+      var marker = document.createElement("div");
+      marker.style.color = "#822";
+      marker.innerHTML = "●";
+      return marker;
+    }
+
+
+    $(function() {
+      $('[data-action]').on('click', handleAction);
+      $output = $('#output');
+      $buttons = $('#buttons');
+      $history = $('#history');
+    });
+  </script>
+</body>
+</html>
