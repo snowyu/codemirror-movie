@@ -50,6 +50,7 @@
   border-top: 1px solid #e3e3e3;
   padding-top: 10px;
 }
+.order { display: none; padding: 10px 0; }
 .start, .finish { display: block; }
 .finish { display: none; }
 .btn-group-vertical .btn { display: none; }
@@ -66,6 +67,7 @@
 [data-lastaction='highlight'] .highlight { display: inline-block; }
 [data-lastaction='unhighlightline'] .unhighlightline { display: inline-block; }
 
+.panel-body p { display: none;  margin: 0; }
 
 .CodeMirror-highlights { width: 10px; cursor: pointer; }
 </style>
@@ -75,33 +77,48 @@
 <div class='container'>
   <h1>CodeMirror Movie Builder</h1>
   <p>Want to play a movie? Try the <a href='player.html'>player</a>.</p>
-  <div class='col-md-10'>
+  <div class='col-md-9'>
     <textarea id="code" name="code"></textarea>
 
     <h2>Output</h2>
     <textarea id="output" class='col-md-12' rows='20' readonly></textarea>
   </div>
 
-  <div class='col-md-2'>
-    <div>
+  <div class='col-md-3 sidebar' data-lastaction='nothing'>
+
+
+
+    <div class='panel panel-default instuctions'>
+      <div class="panel-body">
+        <p class='nothing'>To get started, enter some text that would show up initially. Optionally set the animation order to start on. Leave the cursor where you want it to start.</p>
+        <p class='record'>Now, pick an action to add to the animtion. The editor will become available for the action you're using.</p>
+        <p class='type'>Start typing code! Make note that you can't delete code or move the cursor position.</p>
+        <p class='jumpTo'>Move the cursor to a new place within the document and finalize the position.</p>
+        <p class='highlightline'>Click on the line numbers to highlight lines. All lines will be highlighted between the lowested line clicked and the line clicked.</p>
+        <p class='unhighlightline'>Click on the line numbers to unhighlight lines. All lines will be unhighlighted between the lowested line clicked and the last line clicked.</p>
+        <p class='highlight'>Select text and click "Finish Highlighting text" to add a highlight.</p>
+        <p class='unhighlight'>Select text and click "Finish Unhighlighting text" to remove a highlight.</p>
+        <p class='killLine'>Click on the line numbers to remove lines. All lines will be remove between the lowested line clicked and the last line clicked.</p>
+        <p class='delCharBefore'>Click delete any number of times. You cannot move the cursor or add new text in this mode.</p>
+      </div>
+    </div>
+
+    <div class="nothing order">
       <div class="input-group">
         <span class="input-group-addon" id="basic-addon3">Order</span>
         <input type="text" class="form-control" id="starting-order" value="1">
       </div>
     </div>
 
-    <br />
-
-    <div class="btn-group-vertical" id='buttons' data-lastaction='nothing'>
-      <a class="btn btn-default nothing" href="#" role="button" data-action='record'>Set Initial Code</a>
-      <a class="btn btn-default record" href="#" role="button" data-action='reset'>Reset</a>
-      <a class="btn btn-default record jumpTo" href="#" role="button" data-action='jumpTo'>
-        <span class='start'>Set new Cursor Position</span>
-        <span class='finish'>Finalize Cursor Position</span>
-      </a>
+    <div class="btn-group-vertical" id='buttons'>
+      <a class="btn btn-default nothing btn-success" href="#" role="button" data-action='record'>Set Initial Code</a>
       <a class="btn btn-default record type" href="#" role="button" data-action='type'>
         <span class='start'>Type</span>
         <span class='finish'>Finish Typing</span>
+      </a>
+      <a class="btn btn-default record jumpTo" href="#" role="button" data-action='jumpTo'>
+        <span class='start'>Set new Cursor Position</span>
+        <span class='finish'>Finalize Cursor Position</span>
       </a>
       <a class="btn btn-default record highlightline" href="#" role="button" data-action='highlightline'>
         <span class='start'>Highlight Lines</span>
@@ -115,6 +132,10 @@
         <span class='start'>Highlight Text</span>
         <span class='finish'>Finish Highlighting Text</span>
       </a>
+      <a class="btn btn-default record unhighlight" href="#" role="button" data-action='unhighlight'>
+        <span class='start'>Unhighlight Text</span>
+        <span class='finish'>Finish Unhighlighting Text</span>
+      </a>
       <a class="btn btn-default record killLine" href="#" role="button" data-action='killLine'>
         <span class='start'>Remove Lines</span>
         <span class='finish'>Finish Removing Lines</span>
@@ -123,9 +144,8 @@
         <span class='start'>Delete Characters</span>
         <span class='finish'>Finish Deleting Characters</span>
       </a>
+      <a class="btn btn-default record btn-danger" href="#" role="button" data-action='reset'>Reset</a>
     </div>
-
-    <ul class='list-unstyled' id='history'></ul>
   </div>
 </div>
 
@@ -137,9 +157,8 @@
           gutters: ["CodeMirror-linenumbers", "CodeMirror-highlights"]
         }),
         lastAction,
-        $buttons,
         $output,
-        $history,
+        $sidebar,
         order = 1,
         state = {};
 
@@ -151,7 +170,7 @@
           lastAction = action.attr('data-action');
 
       if(action.children().length > 0) {
-        if($buttons.hasClass('action-started')) {
+        if($sidebar.hasClass('action-started')) {
           finish = true
         } else {
           started = true
@@ -159,19 +178,16 @@
       }
 
       if(finish) {
-        $buttons.attr('data-lastaction', 'record')
+        $sidebar.attr('data-lastaction', 'record')
                 .removeClass('action-started');
-        $history.append('<li>'+lastAction+' completed</li>');
       } else if(started) {
-        $buttons.attr('data-lastaction', lastAction)
+        $sidebar.attr('data-lastaction', lastAction)
                 .addClass('action-started');
-        $history.append('<li>'+lastAction+' started</li>');
       } else if(lastAction === 'reset'){
-        $buttons.attr('data-lastaction', 'nothing');
+        $sidebar.attr('data-lastaction', 'nothing');
       } else {
-        $buttons.attr('data-lastaction', 'record')
+        $sidebar.attr('data-lastaction', 'record')
                 .removeClass('action-started');
-        $history.append('<li>'+lastAction+'</li>');
       }
       commands[lastAction](started);
 
@@ -187,7 +203,6 @@
     var commands = {
       reset: function() {
         $output.val('');
-        $history.empty();
         editor.setOption("readOnly", false);
       },
       record: function() {
@@ -208,14 +223,18 @@
         if(started) {
           // Let them find a spot for the cursor
           editor.setOption("readOnly", false);
+          editor.on('beforeChange', cancelDeletionsAndAdditions);
         } else {
           var cursorPosition = editor.getCursor();
+          editor.off('beforeChange', cancelDeletionsAndAdditions);
           appendCommand('jumpTo: { order: '+ (order++) +', pos: "'+cursorPosition.line+':'+cursorPosition.ch+'" }');
           editor.setOption("readOnly", true);
         }
       },
       type: function(started) {
         if(started) {
+          editor.on('beforeChange', cancelNonTypeEvents);
+          editor.on('beforeSelectionChange', cancelNonTypeEvents);
           editor.setOption("readOnly", false);
           editor.focus();
           state.cursorPosition = editor.getCursor();
@@ -223,6 +242,8 @@
           var newPosition = editor.getCursor(),
               enteredText = editor.getRange(state.cursorPosition, newPosition);
           enteredText = enteredText.replace(/\n/g, '\\n');
+          editor.off('beforeChange', cancelNonTypeEvents);
+          editor.off('beforeSelectionChange', cancelNonTypeEvents);
           appendCommand('type: { order: '+ (order++) +', text: "'+enteredText+'" }');
           editor.setOption("readOnly", true);
         }
@@ -284,12 +305,16 @@
         if(start) {
           // nothing
           editor.setOption("readOnly", false);
+          editor.on('beforeChange', cancelNewContent);
+          editor.on('beforeSelectionChange', cancelNonTypeEvents);
           editor.on("keyup", trackCharacterCount);
           editor.focus();
           state.times = 0;
         } else {
           editor.setOption("readOnly", true);
           editor.off("keyup", trackCharacterCount);
+          editor.off('beforeChange', cancelNewContent);
+          editor.off('beforeSelectionChange', cancelNonTypeEvents);
           if(state.times && state.times >= 1) {
             var times = '';
             if(state.times >= 1) {
@@ -309,6 +334,17 @@
               fromPos = start.line + ":" + start.ch,
               toPos = end.line + ":" + end.ch;
           appendCommand("highlight: { order: "+ (order++) +", from: '"+fromPos+"', to: '"+toPos+"', style: 'code-highlight-neg' }")
+        }
+      },
+      unhighlight: function(start) {
+        if(start) {
+          editor.focus();
+        } else {
+          var start = editor.getCursor(true),
+              end = editor.getCursor(false),
+              fromPos = start.line + ":" + start.ch,
+              toPos = end.line + ":" + end.ch;
+          appendCommand("unhighlight: { order: "+ (order++) +", from: '"+fromPos+"', to: '"+toPos+"', style: 'code-highlight-neg' }")
         }
       }
     }
@@ -335,12 +371,40 @@
       return marker;
     }
 
+    function cancelDeletionsAndAdditions(cm, n, e) {
+      if(n.origin === '+delete') {
+        alert('You cannot delete text when setting the cursor.');
+        n.canceled = true;
+      } else if(n.origin === '+input') {
+        alert('You cannot add text when setting the cursor.');
+        n.canceled = true;
+      }
+    }
+
+    function cancelNonTypeEvents(cm, n, e) {
+      if(n.origin === '+delete') {
+        alert('You cannot delete text when typing.');
+        n.canceled = true;
+      } else if(n.origin === '*mouse') {
+        alert('You cannot use the mouse when typing.');
+        n.canceled = true;
+      }
+    }
+
+    function cancelNewContent(cm, n, e) {
+      if(n.origin !== '+delete') {
+        alert('You can only delete text.');
+        n.canceled = true;
+      }
+    }
+
 
     $(function() {
       $('[data-action]').on('click', handleAction);
       $output = $('#output');
-      $buttons = $('#buttons');
-      $history = $('#history');
+      $sidebar = $('.sidebar');
+
+      $('[data-toggle="tooltip"]').tooltip();
     });
   </script>
 </body>
