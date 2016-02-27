@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <title>CodeMirror Movie Builder</title>
-<link rel="stylesheet" href="./node_modules/codemirror/lib/codemirror.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/codemirror.css">
 <link rel="stylesheet" href="./lib/movie.css">
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
 
-<script src="./node_modules/codemirror/lib/codemirror.js"></script>
-<script src="./node_modules/codemirror/mode/css/css.js"></script>
-<script src="./node_modules/codemirror/mode/xml/xml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/codemirror.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/mode/css/css.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/mode/xml/xml.js"></script>
 
 <script src="./dist/movie.js"></script>
 
@@ -50,6 +50,7 @@
   border-top: 1px solid #e3e3e3;
   padding-top: 10px;
 }
+.start, .finish { display: block; }
 .finish { display: none; }
 .btn-group-vertical .btn { display: none; }
 .action-started .start { display: none; }
@@ -142,11 +143,19 @@
         state = {};
 
     function handleAction(e) {
-      var finish = $(e.toElement).hasClass('finish') ? true : false;
-      var started = $(e.toElement).hasClass('start') ? true : false;
       e.preventDefault();
-      lastAction = $(this).attr('data-action');
+      var action = $(this),
+          started = false,
+          finish = false,
+          lastAction = action.attr('data-action');
 
+      if(action.children().length > 0) {
+        if($buttons.hasClass('action-started')) {
+          finish = true
+        } else {
+          started = true
+        }
+      }
 
       if(finish) {
         $buttons.attr('data-lastaction', 'record')
