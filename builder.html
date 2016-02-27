@@ -56,18 +56,19 @@
 .btn-group-vertical .btn { display: none; }
 .action-started .start { display: none; }
 .action-started .finish { display: inline-block; }
-[data-lastaction='nothing'] .nothing { display: inline-block; }
-[data-lastaction='record'] .record { display: inline-block; }
-[data-lastaction='jumpTo'] .jumpTo { display: inline-block; }
-[data-lastaction='reset'] .reset { display: inline-block; }
-[data-lastaction='type'] .type { display: inline-block; }
-[data-lastaction='highlightline'] .highlightline { display: inline-block; }
-[data-lastaction='killLine'] .killLine { display: inline-block; }
-[data-lastaction='delCharBefore'] .delCharBefore { display: inline-block; }
-[data-lastaction='highlight'] .highlight { display: inline-block; }
-[data-lastaction='unhighlightline'] .unhighlightline { display: inline-block; }
+[data-lastaction='nothing'] .nothing { display: inline-block !important; }
+[data-lastaction='record'] .record { display: inline-block !important; }
+[data-lastaction='jumpTo'] .jumpTo { display: inline-block !important; }
+[data-lastaction='reset'] .reset { display: inline-block !important; }
+[data-lastaction='type'] .type { display: inline-block !important; }
+[data-lastaction='highlightline'] .highlightline { display: inline-block !important; }
+[data-lastaction='killLine'] .killLine { display: inline-block !important; }
+[data-lastaction='delCharBefore'] .delCharBefore { display: inline-block !important; }
+[data-lastaction='highlight'] .highlight { display: inline-block !important; }
+[data-lastaction='unhighlightline'] .unhighlightline { display: inline-block !important; }
 
-.panel-body p { display: none;  margin: 0; }
+.instuctions .panel-body p { display: none;  margin: 0; }
+.next-step { display: none; margin-top: 10px;  }
 
 .CodeMirror-highlights { width: 10px; cursor: pointer; }
 </style>
@@ -145,6 +146,12 @@
         <span class='finish'>Finish Deleting Characters</span>
       </a>
       <a class="btn btn-default record btn-danger" href="#" role="button" data-action='reset'>Reset</a>
+    </div>
+
+    <div class='panel panel-default next-step record'>
+      <div class="panel-body">
+        <p>When you're done, copy the "output" and head over to the <a href='player.html'>player</a> and to try "playing" it.</p>
+      </div>
     </div>
   </div>
 </div>
