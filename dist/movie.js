@@ -49,13 +49,36 @@ var actions = {
 		}, options.delay);
 	},
 
+	insert: function insert(options, editor, next, timer) {
+		options = extend({
+			text: "", // text to type
+			delay: 0, // delay before text insertion
+			pos: null // initial position where to start typing
+		}, wrap("text", options));
+
+		if (!options.text) {
+			options.text = "\n";
+		}
+
+		if (options.pos !== null) {
+			editor.setCursor(makePos(options.pos, editor));
+		}
+
+		var chars = options.text.split("");
+
+		timer(function perform() {
+			editor.replaceSelection(options.text, "end");
+			next();
+		}, options.delay);
+	},
+
 	/**
-  * Wait for a specified timeout
-  * @param options
-  * @param editor
-  * @param next
-  * @param timer
-  */
+ * Wait for a specified timeout
+ * @param options
+ * @param editor
+ * @param next
+ * @param timer
+ */
 	wait: function wait(options, editor, next, timer) {
 		options = extend({
 			timeout: 100
@@ -217,11 +240,12 @@ var actions = {
 		var marks = editor.findMarksAt(from, to);
 		marks.forEach(function (mark) {
 			if (mark.className === options.style) {
+				mark.className = undefined;
 				mark.clear();
 			}
 		});
 
-		editor.markClean(from, to, { className: options.style });
+		// editor.markClean(from, to, {className: options.style});
 		next();
 	},
 
