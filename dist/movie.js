@@ -554,7 +554,7 @@ var defaultOptions = {
 };exports.defaultOptions = defaultOptions;
 
 function movie(target) {
-	var movieOptions = arguments[1] === undefined ? {} : arguments[1];
+	var movieOptions = arguments[1] === undefined ? { force: force } : arguments[1];
 	var editorOptions = arguments[2] === undefined ? {} : arguments[2];
 
 	setupCodeMirror();
@@ -605,7 +605,7 @@ function movie(target) {
 	}
 
 	// create editor instance if needed
-	var editor = targetIsTextarea ? CodeMirror.fromTextArea(target, editorOptions) : target;
+	var editor = targetIsTextarea ? CodeMirror.fromTextArea(target, editorOptions) : CodeMirror(target, editorOptions);
 
 	if (initialPos != -1) {
 		editor.setCursor(editor.posFromIndex(initialPos));
