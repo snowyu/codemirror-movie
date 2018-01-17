@@ -18,12 +18,18 @@
 	/* background: #f5f5f5; */
 	border: 1px solid #e3e3e3;
 }
+.codemirror-movie--positive {
+	background-color: #efe;
+}
+.codemirror-movie--negative {
+	background-color: #fee;
+}
 </style>
 </head>
 <body>
 <h1>CodeMirror Movie</h1>
 
-<!-- 
+<!--
 In textarea, separate initial editor content and movie scenario
 with @@@ separator.
 
@@ -52,13 +58,32 @@ tooltip: {text: "Sample tooltip", wait: 2000}
 wait: 600
 # Perform CodeMirror pre-defined command
 run: {command: "goWordLeft", times: 2} ::: Move word left
+wait: 1000
+moveTo: { pos: '3:8' }
+type: {
+  text:
+    Example Title
+  delay: 20
+} ::: Add a Title
+wait: 1000
+highlight: { from: '3:8', to: '3:21', style: 'codemirror-movie--positive' } ::: I love this title!
+wait: 1000
+highlight: { from: '7:3', to: '7:14', style: 'codemirror-movie--negative' } ::: Why always hello world?
+wait: 1000
+unhighlight: { from: '3:8', to: '3:21', style: 'codemirror-movie--positive' } ::: Unhighlight too!
+wait: 1000
+highlightline: { from: '0', to: '2', style: 'codemirror-movie--positive', where: 'background' } ::: Highlight line
+wait: 1000
+unhighlightline: { from: '1', to: '2', style: 'codemirror-movie--positive', where: 'background' } ::: UnHighlight line
+
 </textarea>
-	<button style="font-size: 2em;margin: 10px auto;display: block;">Play</button>
+	<button class='play' style="font-size: 2em;margin: 10px auto;display: block;">Play</button>
+	<button class='playnext' style="font-size: 2em;margin: 10px auto;display: block;">Play Next</button>
 	<script>
 		var movie = CodeMirror.movie('code');
-		
+
 		// Create simple UI to interact with movie
-		var btn = document.getElementsByTagName('button')[0];
+		var btn = document.getElementsByClassName('play')[0];
 		btn.onclick = function() {
 			if (movie.state == 'play') {
 				movie.pause();
@@ -68,7 +93,13 @@ run: {command: "goWordLeft", times: 2} ::: Move word left
 				this.innerHTML = 'Pause';
 			}
 		};
-		
+
+		var next = document.getElementsByClassName('playnext')[0];
+		next.onclick = function() {
+			movie.pauseAfter = movie._actionIx + 1;
+			movie.play();
+		}
+
 		// Listen to events to change UI state
 		movie.on('stop', function(name) {
 			btn.innerHTML = 'Play';

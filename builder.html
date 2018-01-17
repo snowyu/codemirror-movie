@@ -1,0 +1,418 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>CodeMirror Movie Builder</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/codemirror.css">
+<link rel="stylesheet" href="./lib/movie.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/codemirror.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/mode/css/css.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.12.0/mode/xml/xml.js"></script>
+
+<script src="./dist/movie.js"></script>
+
+<style type="text/css">
+#output {
+  border: 1px solid #e3e3e3;
+  background-color: #f6f6f6;
+}
+.CodeMirror {
+	font-size: 12px;
+	/* background: #f5f5f5; */
+	border: 1px solid #e3e3e3;
+}
+.codemirror-movie--positive {
+	background-color: #efe;
+}
+.codemirror-movie--negative {
+	background-color: #fee;
+}
+
+.editor {
+  width: 75%;
+  float: left;
+}
+.commands {
+  width: 23%;
+  float: right;
+}
+.commands ul, .commands ul li {
+  list-style: none;
+}
+.commands ul li {
+  padding-bottom: 10px;
+}
+#history {
+  margin-top: 30px;
+  border-top: 1px solid #e3e3e3;
+  padding-top: 10px;
+}
+.order { display: none; padding: 10px 0; }
+.start, .finish { display: block; }
+.finish { display: none; }
+.btn-group-vertical .btn { display: none; }
+.action-started .start { display: none; }
+.action-started .finish { display: inline-block; }
+[data-lastaction='nothing'] .nothing { display: inline-block !important; }
+[data-lastaction='record'] .record { display: inline-block !important; }
+[data-lastaction='jumpTo'] .jumpTo { display: inline-block !important; }
+[data-lastaction='reset'] .reset { display: inline-block !important; }
+[data-lastaction='type'] .type { display: inline-block !important; }
+[data-lastaction='highlightline'] .highlightline { display: inline-block !important; }
+[data-lastaction='killLine'] .killLine { display: inline-block !important; }
+[data-lastaction='delCharBefore'] .delCharBefore { display: inline-block !important; }
+[data-lastaction='highlight'] .highlight { display: inline-block !important; }
+[data-lastaction='unhighlightline'] .unhighlightline { display: inline-block !important; }
+
+.instuctions .panel-body p { display: none;  margin: 0; }
+.next-step { display: none; margin-top: 10px;  }
+
+.CodeMirror-highlights { width: 10px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class='container'>
+  <h1>CodeMirror Movie Builder</h1>
+  <p>Want to play a movie? Try the <a href='player.html'>player</a>.</p>
+  <div class='col-md-9'>
+    <textarea id="code" name="code"></textarea>
+
+    <h2>Output</h2>
+    <textarea id="output" class='col-md-12' rows='20' readonly></textarea>
+  </div>
+
+  <div class='col-md-3 sidebar' data-lastaction='nothing'>
+
+
+
+    <div class='panel panel-default instuctions'>
+      <div class="panel-body">
+        <p class='nothing'>To get started, enter some text that would show up initially. Optionally set the animation order to start on. Leave the cursor where you want it to start.</p>
+        <p class='record'>Now, pick an action to add to the animtion. The editor will become available for the action you're using.</p>
+        <p class='type'>Start typing code! Make note that you can't delete code or move the cursor position.</p>
+        <p class='jumpTo'>Move the cursor to a new place within the document and finalize the position.</p>
+        <p class='highlightline'>Click on the line numbers to highlight lines. All lines will be highlighted between the lowested line clicked and the line clicked.</p>
+        <p class='unhighlightline'>Click on the line numbers to unhighlight lines. All lines will be unhighlighted between the lowested line clicked and the last line clicked.</p>
+        <p class='highlight'>Select text and click "Finish Highlighting text" to add a highlight.</p>
+        <p class='unhighlight'>Select text and click "Finish Unhighlighting text" to remove a highlight.</p>
+        <p class='killLine'>Click on the line numbers to remove lines. All lines will be remove between the lowested line clicked and the last line clicked.</p>
+        <p class='delCharBefore'>Click delete any number of times. You cannot move the cursor or add new text in this mode.</p>
+      </div>
+    </div>
+
+    <div class="nothing order">
+      <div class="input-group">
+        <span class="input-group-addon" id="basic-addon3">Order</span>
+        <input type="text" class="form-control" id="starting-order" value="1">
+      </div>
+    </div>
+
+    <div class="btn-group-vertical" id='buttons'>
+      <a class="btn btn-default nothing btn-success" href="#" role="button" data-action='record'>Set Initial Code</a>
+      <a class="btn btn-default record type" href="#" role="button" data-action='type'>
+        <span class='start'>Type</span>
+        <span class='finish'>Finish Typing</span>
+      </a>
+      <a class="btn btn-default record jumpTo" href="#" role="button" data-action='jumpTo'>
+        <span class='start'>Set new Cursor Position</span>
+        <span class='finish'>Finalize Cursor Position</span>
+      </a>
+      <a class="btn btn-default record highlightline" href="#" role="button" data-action='highlightline'>
+        <span class='start'>Highlight Lines</span>
+        <span class='finish'>Finish Highlighting Lines</span>
+      </a>
+      <a class="btn btn-default record unhighlightline" href="#" role="button" data-action='unhighlightline'>
+        <span class='start'>Unhighlight Lines</span>
+        <span class='finish'>Finish Unhighlighting Lines</span>
+      </a>
+      <a class="btn btn-default record highlight" href="#" role="button" data-action='highlight'>
+        <span class='start'>Highlight Text</span>
+        <span class='finish'>Finish Highlighting Text</span>
+      </a>
+      <a class="btn btn-default record unhighlight" href="#" role="button" data-action='unhighlight'>
+        <span class='start'>Unhighlight Text</span>
+        <span class='finish'>Finish Unhighlighting Text</span>
+      </a>
+      <a class="btn btn-default record killLine" href="#" role="button" data-action='killLine'>
+        <span class='start'>Remove Lines</span>
+        <span class='finish'>Finish Removing Lines</span>
+      </a>
+      <a class="btn btn-default record delCharBefore" href="#" role="button" data-action='delCharBefore'>
+        <span class='start'>Delete Characters</span>
+        <span class='finish'>Finish Deleting Characters</span>
+      </a>
+      <a class="btn btn-default record btn-danger" href="#" role="button" data-action='reset'>Reset</a>
+    </div>
+
+    <div class='panel panel-default next-step record'>
+      <div class="panel-body">
+        <p>When you're done, copy the "output" and head over to the <a href='player.html'>player</a> and to try "playing" it.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <script src='https://code.jquery.com/jquery-2.2.1.min.js'></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  <script>
+    var editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+          lineNumbers: true,
+          gutters: ["CodeMirror-linenumbers", "CodeMirror-highlights"]
+        }),
+        lastAction,
+        $output,
+        $sidebar,
+        order = 1,
+        state = {};
+
+    function handleAction(e) {
+      e.preventDefault();
+      var action = $(this),
+          started = false,
+          finish = false,
+          lastAction = action.attr('data-action');
+
+      if(action.children().length > 0) {
+        if($sidebar.hasClass('action-started')) {
+          finish = true
+        } else {
+          started = true
+        }
+      }
+
+      if(finish) {
+        $sidebar.attr('data-lastaction', 'record')
+                .removeClass('action-started');
+      } else if(started) {
+        $sidebar.attr('data-lastaction', lastAction)
+                .addClass('action-started');
+      } else if(lastAction === 'reset'){
+        $sidebar.attr('data-lastaction', 'nothing');
+      } else {
+        $sidebar.attr('data-lastaction', 'record')
+                .removeClass('action-started');
+      }
+      commands[lastAction](started);
+
+      if(finish) { state = {}; }
+    }
+
+    function appendCommand(text) {
+      console.log(text);
+      var current = $output.val();
+      $output.val(current + "\n" + text);
+    }
+
+    var commands = {
+      reset: function() {
+        $output.val('');
+        editor.setOption("readOnly", false);
+      },
+      record: function() {
+        var cursorPosition = editor.getCursor(),
+            lines = editor.getValue().split('\n');
+
+        order = +$('#starting-order').val();
+
+        // Add in the initial cursor position
+        var line = lines[cursorPosition.line].split('');
+        line.splice(cursorPosition.ch, 0, '|');
+        lines[cursorPosition.line] = line.join('');
+
+        $output.val(lines.join('\n') + "\n" + "@@@");
+        editor.setOption("readOnly", true);
+      },
+      jumpTo: function(started) {
+        if(started) {
+          // Let them find a spot for the cursor
+          editor.setOption("readOnly", false);
+          editor.on('beforeChange', cancelDeletionsAndAdditions);
+        } else {
+          var cursorPosition = editor.getCursor();
+          editor.off('beforeChange', cancelDeletionsAndAdditions);
+          appendCommand('jumpTo: { order: '+ (order++) +', pos: "'+cursorPosition.line+':'+cursorPosition.ch+'" }');
+          editor.setOption("readOnly", true);
+        }
+      },
+      type: function(started) {
+        if(started) {
+          editor.on('beforeChange', cancelNonTypeEvents);
+          editor.on('beforeSelectionChange', cancelNonTypeEvents);
+          editor.setOption("readOnly", false);
+          editor.focus();
+          state.cursorPosition = editor.getCursor();
+        } else {
+          var newPosition = editor.getCursor(),
+              enteredText = editor.getRange(state.cursorPosition, newPosition);
+          enteredText = enteredText.replace(/\n/g, '\\n');
+          editor.off('beforeChange', cancelNonTypeEvents);
+          editor.off('beforeSelectionChange', cancelNonTypeEvents);
+          appendCommand('type: { order: '+ (order++) +', text: "'+enteredText+'" }');
+          editor.setOption("readOnly", true);
+        }
+      },
+      highlightline: function(start) {
+        if(start) {
+          // nothing
+          editor.on("gutterClick", createMarker);
+        } else {
+          var min = Math.min.apply(this, state.lines),
+              max = Math.max.apply(this, state.lines);
+              pos = "from: '"+min+"'";
+          if(min !== max) {
+            pos = pos + ", to: '"+max+"'";
+          }
+          editor.off("gutterClick", createMarker);
+          appendCommand("highlightline: { order: "+ (order++) +", "+pos+", style: 'code-highlight-pos' }")
+          editor.clearGutter('CodeMirror-highlights');
+        }
+      },
+      unhighlightline: function(start) {
+        if(start) {
+          // nothing
+          editor.on("gutterClick", createMarker);
+        } else {
+          var min = Math.min.apply(this, state.lines),
+              max = Math.max.apply(this, state.lines);
+              pos = "from: '"+min+"'";
+          if(min !== max) {
+            pos = pos + ", to: '"+max+"'";
+          }
+          editor.off("gutterClick", createMarker);
+          appendCommand("unhighlightline: { order: "+ (order++) +", "+pos+", style: 'code-highlight-pos' }")
+          editor.clearGutter('CodeMirror-highlights');
+        }
+      },
+      killLine: function(start) {
+        if(start) {
+          // nothing
+          editor.on("gutterClick", createMarker);
+        } else {
+          var min = Math.min.apply(this, state.lines),
+              max = Math.max.apply(this, state.lines);
+              times = "";
+          if(min !== max) {
+            times = ", times: " + (max-min+1);
+          }
+          editor.off("gutterClick", createMarker);
+          appendCommand("jumpTo: { order: "+ (order++) +", pos: '"+min+":0'}");
+          appendCommand("run: { order: "+ (order++) +", command: 'killLine'"+times+" }");
+          editor.clearGutter('CodeMirror-highlights');
+
+          var val = editor.getValue().split('\n');
+          val.splice(min, (max-min)+1);
+          editor.setValue(val.join('\n'));
+        }
+      },
+      delCharBefore: function(start) {
+        if(start) {
+          // nothing
+          editor.setOption("readOnly", false);
+          editor.on('beforeChange', cancelNewContent);
+          editor.on('beforeSelectionChange', cancelNonTypeEvents);
+          editor.on("keyup", trackCharacterCount);
+          editor.focus();
+          state.times = 0;
+        } else {
+          editor.setOption("readOnly", true);
+          editor.off("keyup", trackCharacterCount);
+          editor.off('beforeChange', cancelNewContent);
+          editor.off('beforeSelectionChange', cancelNonTypeEvents);
+          if(state.times && state.times >= 1) {
+            var times = '';
+            if(state.times >= 1) {
+              times = ", times: " + state.times
+            }
+            appendCommand("run: { order: "+ (order++) +", command: 'delCharBefore'"+times+" }");
+          }
+        }
+      }
+      ,
+      highlight: function(start) {
+        if(start) {
+          editor.focus();
+        } else {
+          var start = editor.getCursor(true),
+              end = editor.getCursor(false),
+              fromPos = start.line + ":" + start.ch,
+              toPos = end.line + ":" + end.ch;
+          appendCommand("highlight: { order: "+ (order++) +", from: '"+fromPos+"', to: '"+toPos+"', style: 'code-highlight-neg' }")
+        }
+      },
+      unhighlight: function(start) {
+        if(start) {
+          editor.focus();
+        } else {
+          var start = editor.getCursor(true),
+              end = editor.getCursor(false),
+              fromPos = start.line + ":" + start.ch,
+              toPos = end.line + ":" + end.ch;
+          appendCommand("unhighlight: { order: "+ (order++) +", from: '"+fromPos+"', to: '"+toPos+"', style: 'code-highlight-neg' }")
+        }
+      }
+    }
+
+    function trackCharacterCount(cm, change) {
+      state.times++;
+    }
+
+    function createMarker(cm, n) {
+      var info = cm.lineInfo(n);
+      state.lines = state.lines || [];
+      state.lines.push(n);
+      if(info.gutterMarkers) {
+        var index = state.lines.indexOf(n);
+        state.lines.splice(index, 1);
+      }
+      cm.setGutterMarker(n, "CodeMirror-highlights", info.gutterMarkers ? null : makeMarker());
+    }
+
+    function makeMarker() {
+      var marker = document.createElement("div");
+      marker.style.color = "#822";
+      marker.innerHTML = "●";
+      return marker;
+    }
+
+    function cancelDeletionsAndAdditions(cm, n, e) {
+      if(n.origin === '+delete') {
+        alert('You cannot delete text when setting the cursor.');
+        n.canceled = true;
+      } else if(n.origin === '+input') {
+        alert('You cannot add text when setting the cursor.');
+        n.canceled = true;
+      }
+    }
+
+    function cancelNonTypeEvents(cm, n, e) {
+      if(n.origin === '+delete') {
+        alert('You cannot delete text when typing.');
+        n.canceled = true;
+      } else if(n.origin === '*mouse') {
+        alert('You cannot use the mouse when typing.');
+        n.canceled = true;
+      }
+    }
+
+    function cancelNewContent(cm, n, e) {
+      if(n.origin !== '+delete') {
+        alert('You can only delete text.');
+        n.canceled = true;
+      }
+    }
+
+
+    $(function() {
+      $('[data-action]').on('click', handleAction);
+      $output = $('#output');
+      $sidebar = $('.sidebar');
+
+      $('[data-toggle="tooltip"]').tooltip();
+    });
+  </script>
+</body>
+</html>

@@ -13,13 +13,13 @@ var actions = {
 	/**
   * Type-in passed text into current editor char-by-char
   * @param {Object} options Current options
-  * @param {CodeMirror} editor Editor instance where action should be 
+  * @param {CodeMirror} editor Editor instance where action should be
   * performed
   * @param {Function} next Function to call when action performance
   * is completed
-  * @param {Function} timer Function that creates timer for delayed 
+  * @param {Function} timer Function that creates timer for delayed
   * execution. This timer will automatically delay execution when
-  * scenario is paused and revert when played again 
+  * scenario is paused and revert when played again
   */
 	type: function type(options, editor, next, timer) {
 		options = extend({
@@ -177,6 +177,97 @@ var actions = {
 		var from = makePos(options.from, editor);
 		var to = makePos(options.to, editor);
 		editor.setSelection(from, to);
+		next();
+	},
+
+	/**
+  * Highlights text with an optional CSS class
+  * @param {Object} options
+  * @param {CodeMirror} editor
+  * @param {Function} next
+  * @param {Function} timer
+  */
+	highlight: function highlight(options, editor, next, timer) {
+		options = extend({
+			from: "caret",
+			style: "highlighted"
+		}, wrap("to", options));
+
+		var from = makePos(options.from, editor);
+		var to = makePos(options.to, editor);
+		editor.markText(from, to, { className: options.style });
+		next();
+	},
+
+	/**
+  * Removes a highlight from text
+  * @param {Object} options
+  * @param {CodeMirror} editor
+  * @param {Function} next
+  * @param {Function} timer
+  */
+	unhighlight: function unhighlight(options, editor, next, timer) {
+		options = extend({
+			from: "caret",
+			style: "highlighted"
+		}, wrap("to", options));
+
+		var from = makePos(options.from, editor);
+		var to = makePos(options.to, editor);
+		var marks = editor.findMarksAt(from, to);
+		marks.forEach(function (mark) {
+			if (mark.className === options.style) {
+				mark.clear();
+			}
+		});
+
+		editor.markClean(from, to, { className: options.style });
+		next();
+	},
+
+	/**
+  * Highlights an entire line
+  * @param {Object} options
+  * @param {CodeMirror} editor
+  * @param {Function} next
+  * @param {Function} timer
+  */
+	highlightline: function highlightline(options, editor, next, timer) {
+		options = extend({
+			style: "highlighted",
+			where: "text"
+		}, wrap("to", options));
+
+		var from = +options.from;
+		var to = +(options.to || from);
+
+		// Add this lineclass to all lines
+		for (var i = from; i <= to; i++) {
+			editor.addLineClass(i, options.where, options.style);
+		}
+		next();
+	},
+
+	/**
+  * Highlights an entire line
+  * @param {Object} options
+  * @param {CodeMirror} editor
+  * @param {Function} next
+  * @param {Function} timer
+  */
+	unhighlightline: function unhighlightline(options, editor, next, timer) {
+		options = extend({
+			style: "highlighted",
+			where: "text"
+		}, wrap("to", options));
+
+		var from = +options.from;
+		var to = +(options.to || from);
+
+		// Remove this lineclass to all lines
+		for (var i = from; i <= to; i++) {
+			editor.removeLineClass(i, options.where, options.style);
+		}
 		next();
 	}
 };
@@ -521,7 +612,7 @@ function movie(target) {
 
 /**
  * Prettyfies key bindings references in given string: formats it according
- * to current user’s platform. The key binding should be defined inside 
+ * to current user’s platform. The key binding should be defined inside
  * parentheses, e.g. <code>(ctrl-alt-up)</code>
  * @param {String} str
  * @param {Object} options Transform options
@@ -553,7 +644,78 @@ function readLines(text) {
 	var nl = "\n";
 	var lines = (text || "").replace(/\r\n/g, nl).replace(/\n\r/g, nl).replace(/\r/g, nl).split(nl);
 
+	// If this line starts with spaces or is just a }, combine it with the last line
+	for (var i = lines.length - 1; i >= 0; i--) {
+		if (lines[i].match(/^[\s\s]|^[}$]/)) {
+			lines[i - 1] = lines[i - 1] + "\n" + lines[i];
+			lines.splice(i, 1);
+		}
+	}
+
+	// Combine multiline statements into a single line
+	for (var i = 0, len = lines.length; i < lines.length; i++) {
+		if (lines[i].match("\n") && lines[i].match()) {
+			lines[i] = parseMultlineScenerio(lines[i]);
+		}
+	}
+
 	return lines.filter(Boolean);
+}
+
+// Allow commands to be spread over multiple lines, using indentation to determine
+function parseMultlineScenerio(line) {
+	var reg = /^(\w+?)\s*:\s*({[\s|\S]+})\s*(?::::\s*([\s\S]+))?/m,
+	    res = line.match(reg),
+	    ob = {};
+
+	var parsedRes = res[2].split("\n"),
+	    key,
+	    t,
+	    tabLength = false,
+	    firstLevelIndentRegex = "(w+?)s*:s*(.+)",
+	    lastLevelIndentRegex;
+	for (var i = 0, len = parsedRes.length; i < len; i++) {
+		var tabs = parsedRes[i].match(/^(\s)+/);
+		if (tabs) {
+			// 2 tabs means this must be a key
+			if (tabs[0].length == tabLength || !tabLength) {
+				if (!tabLength) {
+					tabLength = tabs[0].length;
+					firstLevelIndentRegex = new RegExp("^\\s{" + tabLength + "}(\\w+?)\\s*:\\s*(.+)");
+					lastLevelIndentRegex = new RegExp("^\\s{" + tabLength * 2 + "}");
+				}
+				// If this is a {key: value}, save both
+				if (parsedRes[i].match(firstLevelIndentRegex)) {
+					t = parseJSON("{" + parsedRes[i] + "}");
+					key = Object.keys(t)[0];
+					ob[key] = t[key];
+				} else {
+					// Otherwise, just a key, add that in
+					key = parsedRes[i].match(/\w+/)[0];
+					ob[key] = "";
+				}
+			} else {
+				// This is a multiline string we need to combine
+				ob[key] = ob[key] + parsedRes[i].replace(lastLevelIndentRegex, "") + "\n";
+			}
+		} else if (parsedRes[i].match(/^\s*$/) && key) {
+			ob[key] = ob[key] + "\n";
+		}
+	}
+
+	Object.keys(ob).forEach(function (key) {
+		if (ob[key].trim) {
+			ob[key] = ob[key].trim();
+		}
+	});
+
+	// Add Outline
+	var outline = "";
+	if (res[3]) {
+		outline = " ::: " + res[3];
+	}
+
+	return res[1] + ":" + JSON.stringify(ob) + outline;
 }
 
 function unescape(text) {
@@ -580,7 +742,7 @@ function parseMovieDefinition(text) {
 	var parts = text.split(options.sectionSeparator);
 
 	// parse scenario
-	var reDef = /^(\w+)\s*:\s*(.+)$/;
+	var reDef = /^(\w+?)\s*:\s*({[\s|\S]+})\s*(?::::\s*(.+))?/m;
 	var scenario = [];
 	var outline = {};
 	var editorOptions = {};
@@ -697,6 +859,7 @@ var Scenario = (function () {
 
 		this._actions = actions;
 		this._actionIx = 0;
+		this._pauseAfter = 0;
 		this._editor = null;
 		this._state = STATE_IDLE;
 		this._timerQueue = [];
@@ -729,7 +892,7 @@ var Scenario = (function () {
 
 			/**
     * Play current scenario
-    * @param {CodeMirror} editor Editor instance where on which scenario 
+    * @param {CodeMirror} editor Editor instance where on which scenario
     * should be played
     * @memberOf Scenario
     */
@@ -777,6 +940,18 @@ var Scenario = (function () {
 						}, defaultOptions.afterDelay);
 					}
 
+					var shouldPauseBeforeRunning = that._pauseAfter > 0 ? that._actionIx >= that._pauseAfter : false;
+					if (shouldPauseBeforeRunning) {
+						return timer(function () {
+							that._timerQueue.push({
+								fn: next,
+								delay: 0
+							});
+
+							that.pause();
+						}, 1);
+					}
+
 					that.trigger("action", that._actionIx);
 					var action = parseActionCall(that._actions[that._actionIx++]);
 
@@ -796,13 +971,24 @@ var Scenario = (function () {
 		pause: {
 
 			/**
-    * Pause current scenario playback. It can be restored with 
-    * <code>play()</code> method call 
+    * Pause current scenario playback. It can be restored with
+    * <code>play()</code> method call
     */
 
 			value: function pause() {
 				this._state = STATE_PAUSE;
 				this.trigger("pause");
+			}
+		},
+		pauseAfter: {
+
+			/**
+    * Returns current playback state
+    * @return {String}
+    */
+
+			set: function (index) {
+				return this._pauseAfter = index;
 			}
 		},
 		stop: {
@@ -845,6 +1031,26 @@ var Scenario = (function () {
 				}
 			}
 		},
+		wrapAction: {
+			value: function wrapAction(fn) {
+				// First time calling wrapped action will pause if needed
+				// After this
+				return (function wrap() {
+					var shouldPauseBeforeRunning = this._pauseAfter > 0 ? this._actionIx > this._pauseAfter : false;
+					if (shouldPauseBeforeRunning) {
+						this._timerQueue.push({
+							fn: fn,
+							delay: 0
+						});
+
+						this.pause();
+						this._actionIx = this._pauseAfter;
+					} else {
+						fn.apply(this, arguments);
+					}
+				}).bind(this);
+			}
+		},
 		requestTimer: {
 			value: (function (_requestTimer) {
 				var _requestTimerWrapper = function requestTimer(_x, _x2) {
@@ -860,11 +1066,11 @@ var Scenario = (function () {
 				if (this._state !== STATE_PLAY) {
 					// save function call into a queue till next 'play()' call
 					this._timerQueue.push({
-						fn: fn,
+						fn: this.wrapAction(fn),
 						delay: delay
 					});
 				} else {
-					return requestTimer(fn, delay);
+					return requestTimer(this.wrapAction(fn), delay);
 				}
 			})
 		},
@@ -1746,7 +1952,7 @@ function hide(callback) {
 /**
  * @param {Element} dialog
  * @param {Element} bg
- * @param {Object} options 
+ * @param {Object} options
  */
 function animateShow(dialog, bg) {
 	var options = arguments[2] === undefined ? {} : arguments[2];
