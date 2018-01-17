@@ -538,6 +538,11 @@ var defaultOptions = {
 	parse: true,
 
 	/**
+  * Whether automatically create new code mirror editor instance
+  */
+	createEditor: false,
+
+	/**
   * String or regexp used to separate sections of movie definition, e.g.
   * default value, scenario and editor options
   */
@@ -554,7 +559,7 @@ var defaultOptions = {
 };exports.defaultOptions = defaultOptions;
 
 function movie(target) {
-	var movieOptions = arguments[1] === undefined ? { force: force } : arguments[1];
+	var movieOptions = arguments[1] === undefined ? {} : arguments[1];
 	var editorOptions = arguments[2] === undefined ? {} : arguments[2];
 
 	setupCodeMirror();
@@ -577,7 +582,7 @@ function movie(target) {
 
 	var initialValue = editorOptions.value || (targetIsTextarea ? target.value : target.getValue()) || "";
 
-	if (targetIsTextarea && movieOptions.parse) {
+	if (movieOptions.parse) {
 		extend(movieOptions, parseMovieDefinition(initialValue, movieOptions));
 		initialValue = movieOptions.value;
 		if (movieOptions.editorOptions) {
@@ -585,13 +590,15 @@ function movie(target) {
 		}
 
 		// read CM options from given textarea
-		var cmAttr = /^data\-cm\-(.+)$/i;
-		toArray(target.attributes).forEach(function (attr) {
-			var m = attr.name.match(cmAttr);
-			if (m) {
-				editorOptions[m[1]] = attr.value;
-			}
-		});
+		if (targetIsTextarea) {
+			var cmAttr = /^data\-cm\-(.+)$/i;
+			toArray(target.attributes).forEach(function (attr) {
+				var m = attr.name.match(cmAttr);
+				if (m) {
+					editorOptions[m[1]] = attr.value;
+				}
+			});
+		}
 	}
 
 	// normalize line endings
@@ -600,12 +607,13 @@ function movie(target) {
 	// locate initial caret position from | symbol
 	var initialPos = initialValue.indexOf("|");
 
+	editorOptions.value = initialValue = initialValue.replace(/\|/g, "");
 	if (targetIsTextarea) {
-		target.value = editorOptions.value = initialValue = initialValue.replace(/\|/g, "");
+		target.value = editorOptions.value;
 	}
 
 	// create editor instance if needed
-	var editor = targetIsTextarea ? CodeMirror.fromTextArea(target, editorOptions) : CodeMirror(target, editorOptions);
+	var editor = targetIsTextarea ? CodeMirror.fromTextArea(target, editorOptions) : movieOptions.createEditor ? CodeMirror(target, editorOptions) : target;
 
 	if (initialPos != -1) {
 		editor.setCursor(editor.posFromIndex(initialPos));
