@@ -71,10 +71,16 @@ wait: 1000
 highlight: { from: '7:3', to: '7:14', style: 'codemirror-movie--negative' } ::: Why always hello world?
 wait: 1000
 unhighlight: { from: '3:8', to: '3:21', style: 'codemirror-movie--positive' } ::: Unhighlight too!
+unhighlight: { from: '7:3', to: '7:14', style: 'codemirror-movie--negative' }
 wait: 1000
 highlightline: { from: '0', to: '2', style: 'codemirror-movie--positive', where: 'background' } ::: Highlight line
 wait: 1000
-unhighlightline: { from: '1', to: '2', style: 'codemirror-movie--positive', where: 'background' } ::: UnHighlight line
+unhighlightline: { from: '0', to: '2', style: 'codemirror-movie--positive', where: 'background' } ::: UnHighlight line
+moveTo: { pos: '9:0' }
+insert: {
+  text: <p>this is a line</p>
+}
+insert ::: Insert quickly
 
 </textarea>
 	<button class='play' style="font-size: 2em;margin: 10px auto;display: block;">Play</button>
