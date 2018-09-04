@@ -1,13 +1,19 @@
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var o;"undefined"!=typeof window?o=window:"undefined"!=typeof global?o=global:"undefined"!=typeof self&&(o=self),o.CodeMirrorMovie=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
 
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
 var _defineProperty = function (obj, key, value) { return Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); };
+
+var unescape = _interopRequire(require("unescape-js"));
 
 var _utils = require("./utils");
 
 var extend = _utils.extend;
 var makePos = _utils.makePos;
 var getCursor = _utils.getCursor;
+
+console.log(unescape);
 
 var actions = {
 	/**
@@ -31,6 +37,9 @@ var actions = {
 		if (!options.text) {
 			throw new Error("No text provided for \"type\" action");
 		}
+
+		options.text = unescape(options.text);
+		console.log(options.text);
 
 		if (options.pos !== null) {
 			editor.setCursor(makePos(options.pos, editor));
@@ -301,7 +310,7 @@ function wrap(key, value) {
 }
 
 module.exports = actions;
-},{"./utils":5}],2:[function(require,module,exports){
+},{"./utils":5,"unescape-js":11}],2:[function(require,module,exports){
 "use strict";
 
 exports.viewportRect = viewportRect;
@@ -2333,5 +2342,135 @@ function sanitizeCaretPos(pos) {
 function wrap(key, value) {
 	return typeof value === "object" ? value : _defineProperty({}, key, value);
 }
-},{"../dom":2,"../utils":5,"../vendor/tween":6}]},{},[3])(3)
+},{"../dom":2,"../utils":5,"../vendor/tween":6}],10:[function(require,module,exports){
+/*! http://mths.be/fromcodepoint v0.2.1 by @mathias */
+if (!String.fromCodePoint) {
+	(function() {
+		var defineProperty = (function() {
+			// IE 8 only supports `Object.defineProperty` on DOM elements
+			try {
+				var object = {};
+				var $defineProperty = Object.defineProperty;
+				var result = $defineProperty(object, object, object) && $defineProperty;
+			} catch(error) {}
+			return result;
+		}());
+		var stringFromCharCode = String.fromCharCode;
+		var floor = Math.floor;
+		var fromCodePoint = function(_) {
+			var MAX_SIZE = 0x4000;
+			var codeUnits = [];
+			var highSurrogate;
+			var lowSurrogate;
+			var index = -1;
+			var length = arguments.length;
+			if (!length) {
+				return '';
+			}
+			var result = '';
+			while (++index < length) {
+				var codePoint = Number(arguments[index]);
+				if (
+					!isFinite(codePoint) || // `NaN`, `+Infinity`, or `-Infinity`
+					codePoint < 0 || // not a valid Unicode code point
+					codePoint > 0x10FFFF || // not a valid Unicode code point
+					floor(codePoint) != codePoint // not an integer
+				) {
+					throw RangeError('Invalid code point: ' + codePoint);
+				}
+				if (codePoint <= 0xFFFF) { // BMP code point
+					codeUnits.push(codePoint);
+				} else { // Astral code point; split in surrogate halves
+					// http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+					codePoint -= 0x10000;
+					highSurrogate = (codePoint >> 10) + 0xD800;
+					lowSurrogate = (codePoint % 0x400) + 0xDC00;
+					codeUnits.push(highSurrogate, lowSurrogate);
+				}
+				if (index + 1 == length || codeUnits.length > MAX_SIZE) {
+					result += stringFromCharCode.apply(null, codeUnits);
+					codeUnits.length = 0;
+				}
+			}
+			return result;
+		};
+		if (defineProperty) {
+			defineProperty(String, 'fromCodePoint', {
+				'value': fromCodePoint,
+				'configurable': true,
+				'writable': true
+			});
+		} else {
+			String.fromCodePoint = fromCodePoint;
+		}
+	}());
+}
+
+},{}],11:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+require('string.fromcodepoint');
+
+/**
+ * \\ - matches the backslash which indicates the beginning of an escape sequence
+ * (
+ *   u\{([0-9A-Fa-f]+)\} - first alternative; matches the variable-length hexadecimal escape sequence (\u{ABCD0})
+ * |
+ *   u([0-9A-Fa-f]{4}) - second alternative; matches the 4-digit hexadecimal escape sequence (\uABCD)
+ * |
+ *   x([0-9A-Fa-f]{2}) - third alternative; matches the 2-digit hexadecimal escape sequence (\xA5)
+ * |
+ *   ([1-7][0-7]{0,2}|[0-7]{2,3}) - fourth alternative; matches the up-to-3-digit octal escape sequence (\5 or \512)
+ * |
+ *   (['"tbrnfv0\\]) - fifth alternative; matches the special escape characters (\t, \n and so on)
+ * |
+ *   \U([0-9A-Fa-f]+) - sixth alternative; matches the 8-digit hexadecimal escape sequence used by python (\U0001F3B5)
+ * )
+ */
+var jsEscapeRegex = /\\(u\{([0-9A-Fa-f]+)\}|u([0-9A-Fa-f]{4})|x([0-9A-Fa-f]{2})|([1-7][0-7]{0,2}|[0-7]{2,3})|(['"tbrnfv0\\]))|\\U([0-9A-Fa-f]{8})/g;
+
+var usualEscapeSequences = {
+    '0': '\0',
+    'b': '\b',
+    'f': '\f',
+    'n': '\n',
+    'r': '\r',
+    't': '\t',
+    'v': '\v',
+    '\'': '\'',
+    '"': '"',
+    '\\': '\\'
+};
+
+var fromHex = function fromHex(str) {
+    return String.fromCodePoint(parseInt(str, 16));
+};
+var fromOct = function fromOct(str) {
+    return String.fromCodePoint(parseInt(str, 8));
+};
+
+exports.default = function (string) {
+    return string.replace(jsEscapeRegex, function (_, __, varHex, longHex, shortHex, octal, specialCharacter, python) {
+        if (varHex !== undefined) {
+            return fromHex(varHex);
+        } else if (longHex !== undefined) {
+            return fromHex(longHex);
+        } else if (shortHex !== undefined) {
+            return fromHex(shortHex);
+        } else if (octal !== undefined) {
+            return fromOct(octal);
+        } else if (python !== undefined) {
+            return fromHex(python);
+        } else {
+            return usualEscapeSequences[specialCharacter];
+        }
+    });
+};
+
+module.exports = exports['default'];
+},{"string.fromcodepoint":10}]},{},[3])(3)
 });
