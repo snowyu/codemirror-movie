@@ -4,12 +4,15 @@
   "version": "1.2.1",
   "main": "./dist/movie.js",
   "scripts": {
-    "prepublish": "./node_modules/.bin/gulp"
+    "prepare": "./node_modules/.bin/gulp"
   },
   "devDependencies": {
-    "codemirror": "^5.33.0",
+    "codemirror": "^5.40.0",
     "gulp": "^3.9.1",
-    "gulp-minify-css": "^1.2.4",
+    "gulp-clean-css": "^3.10.0",
     "js-bundler": "git+https://github.com/sergeche/js-bundler.git#v1.0.0"
+  },
+  "dependencies": {
+    "unescape-js": "^1.1.0"
   }
 }

@@ -1,6 +1,6 @@
 var gulp = require('gulp');
 var jsBundler = require('js-bundler');
-var minifyCSS = require('gulp-minify-css');
+var minifyCSS = require('gulp-clean-css');
 
 gulp.task('js', function() {
 	return gulp.src('./lib/movie.js')
