@@ -13,8 +13,6 @@ var extend = _utils.extend;
 var makePos = _utils.makePos;
 var getCursor = _utils.getCursor;
 
-console.log(unescape);
-
 var actions = {
 	/**
   * Type-in passed text into current editor char-by-char
@@ -39,7 +37,6 @@ var actions = {
 		}
 
 		options.text = unescape(options.text);
-		console.log(options.text);
 
 		if (options.pos !== null) {
 			editor.setCursor(makePos(options.pos, editor));
@@ -1311,7 +1308,7 @@ exports.find = find;
 /**
  * Relaxed JSON parser.
  * @param {String} text
- * @returns {Object} 
+ * @returns {Object}
  */
 exports.parseJSON = parseJSON;
 Object.defineProperty(exports, "__esModule", {
@@ -2138,7 +2135,7 @@ var actions = {
 	},
 
 	/**
-  * Shows tooltip with specified text. This tooltip should be explicitly 
+  * Shows tooltip with specified text. This tooltip should be explicitly
   * hidden with `hideTooltip` action
   */
 	showTooltip: function showTooltip(options, editor, next, timer) {
@@ -2242,7 +2239,7 @@ function alignPopupWithTail(popup) {
 
 /**
  * @param {jQuery} elem
- * @param {Object} options 
+ * @param {Object} options
  */
 function animateShow(elem) {
 	var options = arguments[1] === undefined ? {} : arguments[1];
@@ -2302,7 +2299,7 @@ function animateHide(elem, options) {
  * Resolves position where tooltip should point to
  * @param {Object} pos
  * @param {CodeMirror} editor
- * @returns {Object} Object with <code>x</code> and <code>y</code> 
+ * @returns {Object} Object with <code>x</code> and <code>y</code>
  * properties
  */
 function resolvePosition(pos, editor) {
